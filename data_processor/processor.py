@@ -21,9 +21,11 @@ class ClassiffierDataProcessor(BaseDataProcessor):
         assert(os.listdir(self.train_data_dir), os.listdir(self.test_data_dir))
         assert(os.listdir(self.train_data_dir), os.listdir(self.cv_data_dir))
         self.label_list = os.listdir(self.test_data_dir)
+        self.label_dict = {label:idx for idx,label in enumerate(self.label_list)}
         self.num_labels = len(self.label_list)
         self.num_steps=num_steps
         self.word_dict = self.load_dict()
+        self.num_words = len(self.word_dict)
     
     def load_dict(self):
         def load(fp):
@@ -51,7 +53,7 @@ class ClassiffierDataProcessor(BaseDataProcessor):
             data_dir=self.test_data_dir
         elif wt=='cv':
             data_dir=self.cv_data_dir
-        is_random = (wt=='train')
+        is_random = (wt != 'test')
         all_files = []
         for label in self.label_list:
             for fn in os.listdir('%s/%s'%(data_dir,label)):
@@ -63,7 +65,7 @@ class ClassiffierDataProcessor(BaseDataProcessor):
                 sample_file_list = random.sample(all_files,batch_size)
             else:
                 sample_file_list = all_files[i:i+batch_size]
-            
+                i += batch_size
             N=[]
             S=[]
             X=[]
@@ -73,7 +75,7 @@ class ClassiffierDataProcessor(BaseDataProcessor):
                 s,x = self.process_file(fs)
                 S.append(s)
                 X.append(x)
-                Y.append(fs[1])
+                Y.append(self.label_dict[fs[1]])
             yield N,S,X,Y
 
     def process_file(self, fs):

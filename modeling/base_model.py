@@ -32,6 +32,19 @@ class BiRnn():
             self.outputs = tf.concat(outputs,axis=2)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
 
+class Attention():
+    def __init__(self, inputs, name='tfnlp_attention'):
+        with tf.variable_scope(name):
+            raw_inputs_shape = inputs.get_shape().as_list()
+            W = tf.Variable(tf.random_normal([raw_inputs_shape[2]], stddev=0.1))  
+            M = tf.tanh(inputs)
+            _M = tf.matmul(tf.reshape(M, [-1, raw_inputs_shape[2]]), tf.reshape(W, [-1, 1]))  
+            _M = tf.reshape(_M, [-1, raw_inputs_shape[1]])  
+            self.alpha = tf.nn.softmax(_M) #alpah因子，使得模型可以解释，根据alpha可以知道哪些词汇对最终的分类结果影响更大。  
+            #利用权重因子alpha对LSTM输出序列进行加权求和，注意力越高的输出对于最终结果的影响越大。  
+            r = tf.matmul(tf.transpose(inputs, [0, 2, 1]), tf.reshape(self.alpha, [-1, raw_inputs_shape[1], 1]))  
+            self.outputs = tf.nn.tanh(tf.reshape(r, [-1, raw_inputs_shape[2]]))  
+
 class CRF():
     def __init__(self, inputs, num_tags=2, sequence_length=None,name='crf'):
         with tf.variable_scope(name):
@@ -51,13 +64,13 @@ class CRF():
 class Classiffier():
     def __init__(self, inputs, num_label, ffn_units_list=[],name='classiffier'):
         with tf.variable_scope(name):
-            self.exp_label = tf.placeholder(tf.int64, [None])
+            self.exp_label = tf.placeholder(tf.int32, [None])
             exp_prob = tf.one_hot(self.exp_label, depth=num_label)
             for units in ffn_units_list:
                 inputs = tf.layers.dense(inputs=inputs, units=units, activation=tf.nn.relu)
             self.outputs = tf.layers.dense(inputs=inputs, units=num_label, activation=tf.nn.softmax)
             self.loss = -tf.reduce_mean(exp_prob*tf.log(self.outputs))
-            self.predict_label = tf.argmax(self.outputs)
+            self.predict_label = tf.to_int32(tf.argmax(self.outputs,axis=1))
             self.acc = tf.reduce_mean(tf.to_float(tf.equal(self.predict_label, self.exp_label)))
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
             
