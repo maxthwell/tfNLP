@@ -72,6 +72,7 @@ class Classiffier():
             self.loss = -tf.reduce_mean(exp_prob*tf.log(self.outputs))
             self.predict_label = tf.to_int32(tf.argmax(self.outputs,axis=1))
             self.acc = tf.reduce_mean(tf.to_float(tf.equal(self.predict_label, self.exp_label)))
+            self.all_label = tf.concat([tf.reshape(self.exp_label,[-1,1]),tf.reshape(self.predict_label,[-1,1])],axis=1)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
             
 class Regression():

@@ -5,15 +5,20 @@ import scipy as sp
 import tensorflow as tf
 from tfNLP.modeling.base_model import WordEmbedding, BiRnn, Classiffier, Attention
 from tfNLP.data_processor.processor import ClassiffierDataProcessor as CDP
+import evaluator
 
 class BLSTMAttentionClassiffier():
     def __init__(self, model_path=None,num_steps=100):
+        self.model_path=model_path
+        self.metrics={}
+        self.cv_sampler = None
         self.cdp = CDP(
           train_data_dir='/data/THUCNews',
           test_data_dir='/data/THUCNewsTest',
           cv_data_dir='/data/THUCNewsTest',
           num_steps = num_steps,
         )
+        self.evaluator = evaluator.ClassiffierModelEvaluator(num_labels=self.cdp.num_labels,label_name_list=self.cdp.label_list)
         with tf.variable_scope('test_model'):
             self.we = WordEmbedding(num_steps=num_steps,dict_size=self.cdp.num_words,word_vec_size=30)
             self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[30], rnn_type='gru')
@@ -22,9 +27,6 @@ class BLSTMAttentionClassiffier():
             self.saver = tf.train.Saver()
             for var in tf.trainable_variables(): print(var.name)   
 
-        self.model_path=model_path
-        self.metrics={}
-        self.cv_sampler = None
 
     #做交叉验证，如果所有指标都比现有模型好则保持
     def cv(self, sess):
@@ -35,8 +37,11 @@ class BLSTMAttentionClassiffier():
           self.brnn.sequence_length: np.array(L,dtype=np.int32),
           self.clf.exp_label: np.array(Y,dtype=np.int32),
         }
-        loss,acc = sess.run([self.clf.loss, self.clf.acc],feed_dict=fd)
+        loss,acc,all_label = sess.run([self.clf.loss, self.clf.acc, self.clf.all_label],feed_dict=fd)
+        self.evaluator.batch_add(all_label)
+        self.evaluator.update_quota()
         print('cross-validation ---------- loss: %s, acc:%s'%(loss,acc))
+        print(self.evaluator)
         if 'loss' not in self.metrics: self.metrics['loss'] = loss
         if 'acc' not in self.metrics: self.metrics['acc'] = loss
         if loss<self.metrics['loss'] and acc > self.metrics['acc']:
