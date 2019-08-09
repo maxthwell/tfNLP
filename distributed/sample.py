@@ -1,3 +1,10 @@
+import tensorflow as tf
+import numpy as np
+import time
+from tfNLP.classiffier.blstm_attention_classiffier import BLSTMAttentionClassiffier
+from tfNLP.data_processor.processor import ClassiffierDataProcessor
+from tfNLP.data_processor.processor import ClassiffierDataProcessor as CDP
+ 
 # Flags for defining the tf.train.ClusterSpec
 tf.app.flags.DEFINE_string("ps_hosts", "",
                            "Comma-separated list of hostname:port pairs")
@@ -22,37 +29,37 @@ server = tf.train.Server(cluster,
 if FLAGS.job_name == "ps":
     server.join()
 elif FLAGS.job_name == "worker":
- 
+    cdp = CDP(
+      train_data_dir='/data/THUCNews',
+      test_data_dir='/data/THUCNewsTest',
+      cv_data_dir='/data/THUCNewsTest',
+      num_steps = 1000,
+    )
     # Assigns ops to the local worker by default.
     with tf.device(tf.train.replica_device_setter(
             worker_device="/job:worker/task:%d" % FLAGS.task_index,
             cluster=cluster)):
+        #import pdb;pdb.set_trace()
+        m=BLSTMAttentionClassiffier(cdp=cdp, model_path='/root/tfNLP/motc/clf/dist_blstm_attention/model')
+        global_step = tf.Variable(0)
+        summary_op = tf.summary.merge_all()
+        init_op = tf.global_variables_initializer()
 
 # Create a "supervisor", which oversees the training process.
 sv = tf.train.Supervisor(is_chief=(FLAGS.task_index == 0),
-                         logdir="/tmp/train_logs",
+                         logdir="/data/train_logs",
                          init_op=init_op,
                          summary_op=summary_op,
-                         saver=saver,
-                         global_step=global_step,
+                         saver=m.saver,
+                         global_step=global_step,#m.clf.global_step,
                          save_model_secs=600)
  
 # The supervisor takes care of session initialization, restoring from
 # a checkpoint, and closing when done or an error occurs.
 with sv.managed_session(server.target) as sess:
     # Loop until the supervisor shuts down or 1000000 steps have completed.
-    step = 0
-    while not sv.should_stop() and step < 1000000:
-        # Run a training step asynchronously.
-        # See `tf.train.SyncReplicasOptimizer` for additional details on how to
-        # perform *synchronous* training.
-        for (x, y) in zip(train_X, train_Y):
-            _, step = sess.run([train_op, global_step],
-                               feed_dict={X: x,
-                                          Y: y})
- 
-        loss_value = sess.run(loss, feed_dict={X: x, Y: y})
-        print("Step: {}, loss: {}".format(step, loss_value))
+    pass
+    m.train(sess)
  
 # Ask for all the services to stop.
 sv.stop()
