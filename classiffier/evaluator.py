@@ -1,10 +1,10 @@
 import numpy as np
 
 class ClassiffierModelEvaluator():
-    def __init__(self, num_labels=2, label_name_list=None):
-        self.num_labels=num_labels
-        self.sts = np.zeros([num_labels,num_labels],dtype=np.int32)
-        self.label_name_list = label_name_list if label_name_list else ['cls_%s'%i for i in range(num_labels)]
+    def __init__(self, num_label=2, label_name_list=None):
+        self.num_label=num_label
+        self.sts = np.zeros([num_label,num_label],dtype=np.int32)
+        self.label_name_list = label_name_list if label_name_list else ['cls_%s'%i for i in range(num_label)]
         self.quota=None
 
     def add(self,r, c):
@@ -19,7 +19,7 @@ class ClassiffierModelEvaluator():
             self.label_name_list=[range(self.sts.shape[0])]
         sum_r = np.sum(self.sts,axis=1)
         sum_c = np.sum(self.sts,axis=0)
-        quota = np.zeros([3, self.num_labels],dtype=np.float)
+        quota = np.zeros([3, self.num_label],dtype=np.float)
         rows, cols = self.sts.shape
         for c in range(cols):
             quota[0,c] = self.sts[c,c] / sum_r[c]
@@ -34,7 +34,7 @@ class ClassiffierModelEvaluator():
     def __str__(self):
         from prettytable import PrettyTable
         table = PrettyTable(['真实标签\预测标签'] + self.label_name_list + ['宏平均','微平均'])
-        for r in range(self.num_labels):
+        for r in range(self.num_label):
             table.add_row([self.label_name_list[r]]+list(self.sts[r])+['/', '/'])
         table.add_row(['召回率']+list(self.quota[0]))
         table.add_row(['精确率']+list(self.quota[1]))
@@ -42,7 +42,7 @@ class ClassiffierModelEvaluator():
         return str(table)
 
 if __name__=='__main__':
-    cme = ClassiffierModelEvaluator(num_labels=2,label_name_list=['体育','娱乐'])
+    cme = ClassiffierModelEvaluator(num_label=2,label_name_list=['体育','娱乐'])
     cme.add(0,0)
     cme.add(0,1)
     cme.add(0,1)

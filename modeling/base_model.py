@@ -6,9 +6,9 @@ import tensorflow as tf
 from tensorflow.nn import rnn_cell
 
 class WordEmbedding():
-    def __init__(self, num_steps=128, dict_size=20000, word_vec_size=100,name='wordembedding'):
+    def __init__(self, num_step=128, dict_size=20000, word_vec_size=100,name='wordembedding'):
         with tf.name_scope(name):
-            self.inputs=tf.placeholder(tf.int32,[None, num_steps])
+            self.inputs=tf.placeholder(tf.int32,[None, num_step])
             wordEmbedding = tf.Variable(tf.random_normal([dict_size, word_vec_size], stddev=0.1))
             self.outputs = tf.nn.embedding_lookup(wordEmbedding, self.inputs)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
@@ -70,7 +70,7 @@ class Classiffier():
             for units in ffn_units_list:
                 inputs = tf.layers.dense(inputs=inputs, units=units, activation=tf.nn.relu)
             self.outputs = tf.layers.dense(inputs=inputs, units=num_label, activation=tf.nn.softmax)
-            self.loss = -tf.reduce_mean(exp_prob*tf.log(self.outputs))
+            self.loss = -tf.reduce_mean(tf.reduce_sum(exp_prob*tf.log(self.outputs),axis=1))
             self.predict_label = tf.to_int32(tf.argmax(self.outputs,axis=1))
             self.acc = tf.reduce_mean(tf.to_float(tf.equal(self.predict_label, self.exp_label)))
             self.all_label = tf.concat([tf.reshape(self.exp_label,[-1,1]),tf.reshape(self.predict_label,[-1,1])],axis=1)

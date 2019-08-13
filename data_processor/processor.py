@@ -10,7 +10,7 @@ class BaseDataProcessor():
 
 
 class ClassiffierDataProcessor(BaseDataProcessor):
-    def __init__(self, train_data_dir, test_data_dir, cv_data_dir, num_steps=10, dict_path=None):
+    def __init__(self, train_data_dir, test_data_dir, cv_data_dir, num_step=10, dict_path=None):
         #训练集目录
         self.train_data_dir=train_data_dir
         #测试集目录
@@ -22,8 +22,8 @@ class ClassiffierDataProcessor(BaseDataProcessor):
         assert(os.listdir(self.train_data_dir), os.listdir(self.cv_data_dir))
         self.label_list = os.listdir(self.test_data_dir)
         self.label_dict = {label:idx for idx,label in enumerate(self.label_list)}
-        self.num_labels = len(self.label_list)
-        self.num_steps=num_steps
+        self.num_label = len(self.label_list)
+        self.num_step=num_step
         self.word_dict = self.load_dict()
         self.num_words = len(self.word_dict)
     
@@ -83,11 +83,11 @@ class ClassiffierDataProcessor(BaseDataProcessor):
         #先进行分词  
         words = list(jieba.cut(s, cut_all=True)) 
         #初始化向量序列  
-        data = [0 for i in range(self.num_steps)] 
+        data = [0 for i in range(self.num_step)] 
         j = 0  
         #按照词序，依次把用词向量填充序列  
         for i in range(len(words)):
-            if i == self.num_steps:  
+            if i == self.num_step:  
                 break  
             w = words[i]  
             if w in self.word_dict:  
