@@ -12,7 +12,7 @@ class BrnnCrfNer():
         self.num_step=num_step
         self.num_tags=num_tags
         self.num_words=num_words
-        with tf.variable_scope('only_attention_classiffier'):
+        with tf.variable_scope('brnn_crf_ner'):
             self.we = WordEmbedding(num_step=num_step,dict_size=num_words,word_vec_size=50)
             self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[30], rnn_type='gru')
             self.crf = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length)
@@ -55,7 +55,7 @@ class BrnnCrfNer():
                   self.brnn.sequence_length: np.array(L),
                   self.crf.exp_tags: np.array(Y,dtype=np.int32),
                 }
-                _,step,loss,acc = sess.run([self.train_op, self.crf.global_step, self.crf.loss, self.crf.acc],feed_dict=fd)
+                _,step,loss,acc,outputs = sess.run([self.train_op, self.crf.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
                 print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
             print('save model: ',self.model_path)
             self.saver.save(sess, self.model_path)
@@ -72,15 +72,13 @@ class BrnnCrfNer():
 
 
 if __name__=='__main__':
-    '''
     ndp = NDP(
-      train_data_dir='/data/THUCNews',
-      test_data_dir='/data/THUCNewsTest',
-      cv_data_dir='/data/THUCNewsTest',
-      num_step = 1000,
+      num_step = 100,
     )
-    m=BrnnAttentionClassiffier(num_label=ndp.num_label,num_step=ndp.num_step,num_words=ndp.num_words, model_path='/root/tfNLP/motc/ner/brnn_crf/model')
+    m=BrnnCrfNer(num_tags=2,num_step=ndp.num_step,num_words=ndp.num_words, model_path='/root/tfNLP/motc/ner/brnn_crf/model')
     train_generator = ndp.batch_sample(batch_size=1000)
     cv_generator = ndp.batch_sample(batch_size=10000,work_type='cv')
     for i in range(100): m.train(train_generator=train_generator,cv_generator=cv_generator)
-    '''
+    
+            
+            

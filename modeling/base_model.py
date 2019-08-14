@@ -58,7 +58,7 @@ class CRF():
             self.outputs, self.best_score = tf.contrib.crf.crf_decode(inputs,self.transition_params,sequence_length)
             yeqd = tf.equal(self.exp_tags, self.outputs)
             sum_sl = tf.to_float(tf.reduce_sum(sequence_length))
-            self.accuracy = (tf.reduce_sum(tf.to_float(yeqd)) - tf.reduce_sum(tf.ones_like(tf.to_float(self.exp_tags))) + sum_sl) / sum_sl
+            self.acc = (tf.reduce_sum(tf.to_float(yeqd)) - tf.reduce_sum(tf.ones_like(tf.to_float(self.exp_tags))) + sum_sl) / sum_sl
             self.global_step = tf.Variable(0)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
 

@@ -13,7 +13,7 @@ class BrnnAttentionClassiffier():
         self.num_step=num_step
         self.num_label=num_label
         self.num_words=num_words
-        with tf.variable_scope('only_attention_classiffier'):
+        with tf.variable_scope('brnn_attention_classiffier'):
             self.we = WordEmbedding(num_step=num_step,dict_size=num_words,word_vec_size=50)
             self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[30], rnn_type='gru')
             attention = Attention(inputs=self.brnn.outputs)

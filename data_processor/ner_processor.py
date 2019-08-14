@@ -1,108 +1,98 @@
 import os, sys, random
+import numpy as np
 import jieba
+from collections import Counter
 
-class BaseDataProcessor():
-    def __init__(self):
-        pass
-    
-    def batch_sample(batch_size=100, **kwargs):
-        pass
-
-
-class NerDataProcessor(BaseDataProcessor):
-    def __init__(self, train_data_dir, test_data_dir, cv_data_dir, num_step=10, dict_path=None):
-        #训练集目录
-        self.train_data_dir=train_data_dir
-        #测试集目录
-        self.test_data_dir=test_data_dir
-        #交叉验证集目录
-        self.cv_data_dir=cv_data_dir
+class NerDataProcessor():
+    def __init__(self, wiki_chs_dir='/data/wiki_chs.txt', num_step=10, dict_path=None):
+        self.wiki_chs_dir=wiki_chs_dir
         self.dict_path=dict_path
-        assert(os.listdir(self.train_data_dir), os.listdir(self.test_data_dir))
-        assert(os.listdir(self.train_data_dir), os.listdir(self.cv_data_dir))
-        self.label_list = os.listdir(self.test_data_dir)
-        self.label_dict = {label:idx for idx,label in enumerate(self.label_list)}
-        self.num_label = len(self.label_list)
         self.num_step=num_step
-        self.word_dict = self.load_dict()
-        self.num_words = len(self.word_dict)
-    
-    def load_dict(self):
-        def load(fp):
-            wd = {}
-            idx=1
-            for line in fp:
-                w=str(line,'utf8').split()[0]
-                print(w)
-                wd[w]=idx
-                idx += 1
-            return wd
+        self.s_list=[]
+        self.label_list=[]
+        self.cht_dict = {}
+        self.cht_list = []
+        self.num_words = 0
+        self.load_wiki()
 
-        if self.dict_path:
-            with open(self.dict_path, 'r') as fp:
-                return load(fp)
-        with jieba.get_dict_file() as fp:
-            return load(fp)
-      
+    def deal_line(self,line):
+        s = ''
+        label=[]
+        for sub_line in line[:-1].split('  '):
+            for w in sub_line.split():
+                s += w
+                label.append(1)
+                label += [0 for i in range(len(w)-1)]
+            s += ' '
+            label.append(1)
+        return s[:-1],label[:-1]   
+ 
+    def load_wiki(self):
+        c=Counter()
+        with open('/data/wiki_chs.txt','r') as fp:
+             i = 0
+             for line in fp:
+                 if i == 100000: break
+                 i+=1
+                 print('load wiki line: ', i)
+                 s, label = self.deal_line(line)
+                 if i<50000: c.update(s)
+                 print('sentence length is: ',len(s))
+                 self.s_list.append(s)
+                 self.label_list.append(label)
+        cht_list = [x for x,n in c.items()]
+        cht_list.sort(key=lambda x : c[x], reverse=True)
+        self.cht_list=['UKN']+cht_list[:10000]
+        self.cht_dict = {x:idx for idx,x in enumerate(self.cht_list)}
+        self.num_words=len(self.cht_list)
 
     def batch_sample(self, batch_size=100, **kwargs):
+        def get_single_sample(idx):
+            sentence = self.s_list[idx]
+            _label = self.label_list[idx]
+            len_sentence = len(sentence)
+            if len_sentence > self.num_step:
+                n_diff = len_sentence - self.num_step
+                j = random.randint(0,n_diff)
+                sentence = sentence[j:j+self.num_step]
+                _label = _label[j:j+self.num_step]
+                sl = self.num_step
+            else:
+                sl = len(sentence)
+            data = np.zeros([1,self.num_step])
+            label = np.zeros([1,self.num_step])
+            for i in range(sl):
+                w = sentence[i]
+                data[0,i] = self.cht_dict[w] if w in self.cht_list else 0
+                label[0,i] = _label[i]
+            return sentence, sl, data, label
+
         wt = kwargs['work_type'] if 'work_type' in kwargs else 'train'
-        if wt=='train':
-            data_dir=self.train_data_dir
-        elif wt=='test':
-            data_dir=self.test_data_dir
-        elif wt=='cv':
-            data_dir=self.cv_data_dir
         is_random = (wt != 'test')
-        all_files = []
-        for label in self.label_list:
-            for fn in os.listdir('%s/%s'%(data_dir,label)):
-                all_files.append((data_dir,label,fn))
-        len_samples = len(all_files)
-        i=0
+        len_s_list = len(self.s_list)
+        num_cv = 10000
+        cur_idx = len_s_list-num_cv
         while True:
             if is_random:
-                sample_file_list = random.sample(all_files,batch_size)
+                idx_list = np.random.randint(0, len_s_list-num_cv,[batch_size])
             else:
-                sample_file_list = all_files[i:i+batch_size]
-                i += batch_size
-            N=[]
-            S=[]
-            X=[]
-            Y=[]
-            for fs in sample_file_list:
-                N.append('%s/%s/%s'%fs)
-                s,x = self.process_file(fs)
-                S.append(s)
-                X.append(x)
-                Y.append(self.label_dict[fs[1]])
-            yield N,S,X,Y
+                if cur_idx+batch_size > len_s_list: cur_idx = len_s_list-batch_size
+                idx_list = [i for i in range(cur_idx,cur_idx+batch_size)]
+            sentence_list=[]
+            sl_list = []
+            data_list = []
+            label_list = []
+            for idx in idx_list:
+                sentence, sl, data, label = get_single_sample(idx)
+                sentence_list.append(sentence)
+                sl_list.append(sl)
+                data_list.append(data)
+                label_list.append(label)
+            yield sentence_list, np.array(sl_list), np.concatenate(data_list,axis=0), np.concatenate(label_list,axis=0)
+                    
 
-    def process_file(self, fs):
-        with open('%s/%s/%s'%fs, 'r') as fp: s = fp.read()
-        #先进行分词  
-        words = list(jieba.cut(s, cut_all=True)) 
-        #初始化向量序列  
-        data = [0 for i in range(self.num_step)] 
-        j = 0  
-        #按照词序，依次把用词向量填充序列  
-        for i in range(len(words)):
-            if i == self.num_step:  
-                break  
-            w = words[i]  
-            if w in self.word_dict:  
-                data[i] = self.word_dict[w]  
-        return i, data 
 
 if __name__=='__main__':
-    cdp = ClassiffierDataProcessor(
-      train_data_dir='/data/THUCNews',
-      test_data_dir='/data/THUCNewsTest',
-      cv_data_dir='/data/THUCNewsTest',
-    )
-    for N,S,X,Y in cdp.batch_sample(2):
-        print(N)
-        print(S)
-        print(X)
-        print(Y)
-        sys.exit(0)
+    ndp = NerDataProcessor()
+    for sentence, sl, data, label in ndp.batch_sample(batch_size=10, work_type='cv'):
+        import pdb;pdb.set_trace()
