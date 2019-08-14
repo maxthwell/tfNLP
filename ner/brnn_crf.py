@@ -37,12 +37,22 @@ class BrnnCrfNer():
           self.brnn.sequence_length: np.array(L),
           self.crf.exp_tags: np.array(Y,dtype=np.int32),
         }
+        step,loss,acc,tags= sess.run([self.crf.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
         t0=time.time()
-        step,loss,acc= sess.run([self.crf.global_step, self.crf.loss, self.crf.acc],feed_dict=fd)
+        sess.run([self.crf.global_step,self.crf.outputs],feed_dict=fd)
         t1=time.time()
+        for batch_id in range(100):
+            tag = tags[batch_id]
+            sentence = S[batch_id]
+            s_list=[]
+            for id_s in range(len(sentence)):
+                if tag[id_s]==1: s_list.append('_')
+                s_list.append(sentence[id_s])
+            print(''.join(s_list))
+        print('----------------- deal string length: ', sum(L))        
         print('----------------- global_step: ',step)
         print('----------------- predict 10000 samples use time: %s sencond'%(t1-t0))
-        print('cross-validation ---------- loss: %s, acc:%s'%(loss,acc))
+        print('----------------- cross-validation loss: %s, acc:%s'%(loss,acc))
            
 
     def train(self,sess=None,train_generator=None,cv_generator=None,epochs=100):
@@ -73,12 +83,12 @@ class BrnnCrfNer():
 
 if __name__=='__main__':
     ndp = NDP(
-      num_step = 100,
+      num_step = 1000,
     )
     m=BrnnCrfNer(num_tags=2,num_step=ndp.num_step,num_words=ndp.num_words, model_path='/root/tfNLP/motc/ner/brnn_crf/model')
     train_generator = ndp.batch_sample(batch_size=1000)
-    cv_generator = ndp.batch_sample(batch_size=10000,work_type='cv')
-    for i in range(100): m.train(train_generator=train_generator,cv_generator=cv_generator)
+    cv_generator = ndp.batch_sample(batch_size=1000,work_type='cv')
+    for i in range(100): m.train(epochs=10,train_generator=train_generator,cv_generator=cv_generator)
     
             
             

@@ -9,8 +9,8 @@ class WordEmbedding():
     def __init__(self, num_step=128, dict_size=20000, word_vec_size=100,name='wordembedding'):
         with tf.name_scope(name):
             self.inputs=tf.placeholder(tf.int32,[None, num_step])
-            wordEmbedding = tf.Variable(tf.random_normal([dict_size, word_vec_size], stddev=0.1))
-            self.outputs = tf.nn.embedding_lookup(wordEmbedding, self.inputs)
+            self.wordEmbedding = tf.Variable(tf.random_normal([dict_size, word_vec_size], stddev=0.1))
+            self.outputs = tf.nn.embedding_lookup(self.wordEmbedding, self.inputs)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
 
 class BiRnn():

@@ -4,7 +4,7 @@ import numpy as np
 import scipy as sp
 import tensorflow as tf
 from modeling.base_model import WordEmbedding, BiRnn, Classiffier, Attention
-from data_processor.clf_processor import ClassiffierDataProcessor as CDP
+from data_processor.clf_processor import LocalFileClassiffierDataProcessor as CDP
 from classiffier.evaluator import ClassiffierModelEvaluator
 
 class OnlyAttentionClassiffier():

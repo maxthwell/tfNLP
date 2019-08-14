@@ -13,6 +13,7 @@ class NerDataProcessor():
         self.cht_dict = {}
         self.cht_list = []
         self.num_words = 0
+        self.load_dict()
         self.load_wiki()
 
     def deal_line(self,line):
@@ -26,25 +27,25 @@ class NerDataProcessor():
             s += ' '
             label.append(1)
         return s[:-1],label[:-1]   
+
+    def load_dict(self):
+        with open('/root/tfNLP/data_processor/dict/han_dict.txt', 'r') as fp:
+            for line in fp:
+                self.cht_list.append(line[:-1])
+        self.cht_dict = {x:idx for idx,x in enumerate(self.cht_list)}
+        self.num_words=len(self.cht_list)
  
     def load_wiki(self):
-        c=Counter()
         with open('/data/wiki_chs.txt','r') as fp:
              i = 0
              for line in fp:
-                 if i == 100000: break
+                 #if i == 100000: break
                  i+=1
                  print('load wiki line: ', i)
                  s, label = self.deal_line(line)
-                 if i<50000: c.update(s)
                  print('sentence length is: ',len(s))
                  self.s_list.append(s)
                  self.label_list.append(label)
-        cht_list = [x for x,n in c.items()]
-        cht_list.sort(key=lambda x : c[x], reverse=True)
-        self.cht_list=['UKN']+cht_list[:10000]
-        self.cht_dict = {x:idx for idx,x in enumerate(self.cht_list)}
-        self.num_words=len(self.cht_list)
 
     def batch_sample(self, batch_size=100, **kwargs):
         def get_single_sample(idx):
@@ -68,16 +69,22 @@ class NerDataProcessor():
             return sentence, sl, data, label
 
         wt = kwargs['work_type'] if 'work_type' in kwargs else 'train'
-        is_random = (wt != 'test')
         len_s_list = len(self.s_list)
         num_cv = 10000
-        cur_idx = len_s_list-num_cv
+        num_test = 10000
+        cv_idx = 0
+        test_idx = num_cv
         while True:
-            if is_random:
-                idx_list = np.random.randint(0, len_s_list-num_cv,[batch_size])
-            else:
-                if cur_idx+batch_size > len_s_list: cur_idx = len_s_list-batch_size
-                idx_list = [i for i in range(cur_idx,cur_idx+batch_size)]
+            if wt=='train':
+                idx_list = np.random.randint(num_cv+num_test, len_s_list-1,[batch_size])
+            elif wt=='cv':
+                idx_list = [i for i in range(cv_idx,cv_idx+batch_size)]
+                cv_idx += batch_size
+                if cv_idx>=num_cv: cv_idx==0
+            elif wt=='test':
+                idx_list = [i for i in range(test_idx,test_idx+batch_size)]
+                test_idx+=batch_size
+                if test_idx >= num_cv+num_test: test_idx=0
             sentence_list=[]
             sl_list = []
             data_list = []

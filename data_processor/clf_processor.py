@@ -1,32 +1,14 @@
 import os, sys, random
 import jieba
 
-class BaseDataProcessor():
-    def __init__(self):
-        pass
-    
-    def batch_sample(batch_size=100, **kwargs):
-        pass
-
-
-class ClassiffierDataProcessor(BaseDataProcessor):
-    def __init__(self, train_data_dir, test_data_dir, cv_data_dir, num_step=10, dict_path=None):
-        #训练集目录
-        self.train_data_dir=train_data_dir
-        #测试集目录
-        self.test_data_dir=test_data_dir
-        #交叉验证集目录
-        self.cv_data_dir=cv_data_dir
-        self.dict_path=dict_path
-        assert(os.listdir(self.train_data_dir), os.listdir(self.test_data_dir))
-        assert(os.listdir(self.train_data_dir), os.listdir(self.cv_data_dir))
-        self.label_list = os.listdir(self.test_data_dir)
-        self.label_dict = {label:idx for idx,label in enumerate(self.label_list)}
-        self.num_label = len(self.label_list)
+class WordEmbeddingClassiffierDataProcessor():
+    def __init__(self, num_label, num_step=1000, dict_path=None):
+        self.dict_path = dict_path
+        self.num_label = num_label
         self.num_step=num_step
         self.word_dict = self.load_dict()
         self.num_words = len(self.word_dict)
-    
+
     def load_dict(self):
         def load(fp):
             wd = {}
@@ -44,6 +26,21 @@ class ClassiffierDataProcessor(BaseDataProcessor):
         with jieba.get_dict_file() as fp:
             return load(fp)
       
+class LocalFileClassiffierDataProcessor(WordEmbeddingClassiffierDataProcessor):
+    def __init__(self, train_data_dir, test_data_dir, cv_data_dir, num_step=1000, dict_path=None):
+        #训练集目录
+        self.train_data_dir=train_data_dir
+        #测试集目录
+        self.test_data_dir=test_data_dir
+        #交叉验证集目录
+        self.cv_data_dir=cv_data_dir
+        self.dict_path=dict_path
+        assert(os.listdir(self.train_data_dir), os.listdir(self.test_data_dir))
+        assert(os.listdir(self.train_data_dir), os.listdir(self.cv_data_dir))
+        self.label_list = os.listdir(self.test_data_dir)
+        self.label_dict = {label:idx for idx,label in enumerate(self.label_list)}
+        num_label = len(self.label_list)
+        super(LocalFileClassiffierDataProcessor,self).__init__(num_label,num_step,dict_path=dict_path) 
 
     def batch_sample(self, batch_size=100, **kwargs):
         wt = kwargs['work_type'] if 'work_type' in kwargs else 'train'
@@ -94,8 +91,14 @@ class ClassiffierDataProcessor(BaseDataProcessor):
                 data[i] = self.word_dict[w]  
         return i, data 
 
+
+class EsClassiffierDataProcessor(WordEmbeddingClassiffierDataProcessor):
+    def __init__(self, num_label=10, num_step=1000, es_point='127.0.0.1:9200'):
+        super(EsClassiffierDataProcessor, self).__init__(num_label,num_step)
+
+
 if __name__=='__main__':
-    cdp = ClassiffierDataProcessor(
+    cdp = LocalFileClassiffierDataProcessor(
       train_data_dir='/data/THUCNews',
       test_data_dir='/data/THUCNewsTest',
       cv_data_dir='/data/THUCNewsTest',
