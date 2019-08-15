@@ -1,20 +1,36 @@
-import os, sys, random
+import os, sys, random, linecache
 import numpy as np
 import jieba
 from collections import Counter
+    
+def get_file_lines(filename):
+    count = 0
+    with open(filename, 'rb') as fr:
+        while True:
+            buffer = fr.read(1024 * 8192)
+            if not buffer: break
+            count += buffer.count('\n'.encode(encoding='utf-8'))
+    print('------------ file %s lines: '%filename, count)
+    return count
 
-class NerDataProcessor():
-    def __init__(self, wiki_chs_dir='/data/wiki_chs.txt', num_step=10, dict_path=None):
-        self.wiki_chs_dir=wiki_chs_dir
+
+class WikiDataProcessor():
+    def __init__(self, wiki_chs_file='/data/wiki_chs.txt', wiki_lines=0, num_step=10, dict_path='/root/tfNLP/data_processor/dict/han_dict.txt'):
+        self.wiki_chs_file=wiki_chs_file
+        self.wiki_lines = wiki_lines if wiki_lines > 0 else get_file_lines(wiki_chs_file)
         self.dict_path=dict_path
         self.num_step=num_step
-        self.s_list=[]
-        self.label_list=[]
         self.cht_dict = {}
         self.cht_list = []
         self.num_words = 0
         self.load_dict()
-        self.load_wiki()
+
+    def load_dict(self):
+        with open(self.dict_path, 'r') as fp:
+            for line in fp:
+                self.cht_list.append(line[:-1])
+        self.cht_dict = {x:idx for idx,x in enumerate(self.cht_list)}
+        self.num_words=len(self.cht_list)
 
     def deal_line(self,line):
         s = ''
@@ -27,56 +43,36 @@ class NerDataProcessor():
             s += ' '
             label.append(1)
         return s[:-1],label[:-1]   
-
-    def load_dict(self):
-        with open('/root/tfNLP/data_processor/dict/han_dict.txt', 'r') as fp:
-            for line in fp:
-                self.cht_list.append(line[:-1])
-        self.cht_dict = {x:idx for idx,x in enumerate(self.cht_list)}
-        self.num_words=len(self.cht_list)
- 
-    def load_wiki(self):
-        with open('/data/wiki_chs.txt','r') as fp:
-             i = 0
-             for line in fp:
-                 #if i == 100000: break
-                 i+=1
-                 print('load wiki line: ', i)
-                 s, label = self.deal_line(line)
-                 print('sentence length is: ',len(s))
-                 self.s_list.append(s)
-                 self.label_list.append(label)
+    
+    def get_single_sample(self,idx):
+        line = linecache.getline(self.wiki_chs_file, idx)
+        sentence, _label = self.deal_line(line)
+        len_sentence = len(sentence)
+        if len_sentence > self.num_step:
+            n_diff = len_sentence - self.num_step
+            j = random.randint(0,n_diff)
+            sentence = sentence[j:j+self.num_step]
+            _label = _label[j:j+self.num_step]
+            sl = self.num_step
+        else:
+            sl = len(sentence)
+        data = np.zeros([1,self.num_step])
+        label = np.zeros([1,self.num_step])
+        for i in range(sl):
+            w = sentence[i]
+            data[0,i] = self.cht_dict[w] if w in self.cht_list else 0
+            label[0,i] = _label[i]
+        return sentence, sl, data, label
 
     def batch_sample(self, batch_size=100, **kwargs):
-        def get_single_sample(idx):
-            sentence = self.s_list[idx]
-            _label = self.label_list[idx]
-            len_sentence = len(sentence)
-            if len_sentence > self.num_step:
-                n_diff = len_sentence - self.num_step
-                j = random.randint(0,n_diff)
-                sentence = sentence[j:j+self.num_step]
-                _label = _label[j:j+self.num_step]
-                sl = self.num_step
-            else:
-                sl = len(sentence)
-            data = np.zeros([1,self.num_step])
-            label = np.zeros([1,self.num_step])
-            for i in range(sl):
-                w = sentence[i]
-                data[0,i] = self.cht_dict[w] if w in self.cht_list else 0
-                label[0,i] = _label[i]
-            return sentence, sl, data, label
-
         wt = kwargs['work_type'] if 'work_type' in kwargs else 'train'
-        len_s_list = len(self.s_list)
         num_cv = 10000
         num_test = 10000
         cv_idx = 0
         test_idx = num_cv
         while True:
             if wt=='train':
-                idx_list = np.random.randint(num_cv+num_test, len_s_list-1,[batch_size])
+                idx_list = np.random.randint(num_cv+num_test, self.wiki_lines-1,[batch_size])
             elif wt=='cv':
                 idx_list = [i for i in range(cv_idx,cv_idx+batch_size)]
                 cv_idx += batch_size
@@ -90,7 +86,7 @@ class NerDataProcessor():
             data_list = []
             label_list = []
             for idx in idx_list:
-                sentence, sl, data, label = get_single_sample(idx)
+                sentence, sl, data, label = self.get_single_sample(idx)
                 sentence_list.append(sentence)
                 sl_list.append(sl)
                 data_list.append(data)
@@ -98,8 +94,29 @@ class NerDataProcessor():
             yield sentence_list, np.array(sl_list), np.concatenate(data_list,axis=0), np.concatenate(label_list,axis=0)
                     
 
+class corpusZhDataProcessor():
+    def __init__(self, corpusZh_path='/data/corpusZh/B.txt', corpusZh_lines=0):
+        self.corpusZh_path = corpusZh_path
+        self.corpusZh_lines = corpusZh_lines if corpusZh_lines>0 else get_file_lines(corpusZh_path)
+
+    def deal_line(self, line):
+        unit_list=[]
+        for unit in line.split(' '):
+            if '/' in unit:
+                w, pos = unit.split('/')
+                unit_list.append((w,pos))
+        return unit_list
+   
+    def get_single_sample(self, idx):
+        line = linecache.getline(self.corpusZh_path, idx)
+        for w, pos in self.deal_line(line):
+            print(w, pos)
+         
+    def batch_sample(batch_size=100):
+        pass
 
 if __name__=='__main__':
-    ndp = NerDataProcessor()
-    for sentence, sl, data, label in ndp.batch_sample(batch_size=10, work_type='cv'):
-        import pdb;pdb.set_trace()
+    #wdp = WikiDataProcessor(num_step=1000)
+    #for sentence, sl, data, label in wdp.batch_sample(batch_size=1000, work_type='cv'): pass
+    dp = corpusZhDataProcessor()
+    dp.get_single_sample(2)

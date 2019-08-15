@@ -4,7 +4,7 @@ import numpy as np
 import scipy as sp
 import tensorflow as tf
 from modeling.base_model import WordEmbedding, BiRnn, CRF
-from data_processor.ner_processor import NerDataProcessor as NDP
+from data_processor.ner_processor import WikiDataProcessor as WDP
 
 class BrnnCrfNer():
     def __init__(self, num_step, num_words, num_tags, model_path=None):
@@ -82,13 +82,13 @@ class BrnnCrfNer():
 
 
 if __name__=='__main__':
-    ndp = NDP(
+    wdp = WDP(
       num_step = 1000,
     )
-    m=BrnnCrfNer(num_tags=2,num_step=ndp.num_step,num_words=ndp.num_words, model_path='/root/tfNLP/motc/ner/brnn_crf/model')
-    train_generator = ndp.batch_sample(batch_size=1000)
-    cv_generator = ndp.batch_sample(batch_size=1000,work_type='cv')
-    for i in range(100): m.train(epochs=10,train_generator=train_generator,cv_generator=cv_generator)
+    m=BrnnCrfNer(num_tags=2,num_step=wdp.num_step,num_words=wdp.num_words, model_path='/root/tfNLP/motc/ner/brnn_crf/model')
+    train_generator = wdp.batch_sample(batch_size=1000)
+    cv_generator = wdp.batch_sample(batch_size=1000,work_type='cv')
+    for i in range(100): m.train(epochs=100,train_generator=train_generator,cv_generator=cv_generator)
     
             
             
