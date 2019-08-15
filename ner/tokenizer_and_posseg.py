@@ -4,25 +4,25 @@ import numpy as np
 import scipy as sp
 import tensorflow as tf
 from modeling.base_model import WordEmbedding, BiRnn, CRF
+from modeling.tfmodel import TFModel
 from data_processor.ner_processor import WikiDataProcessor as WDP
 from data_processor.ner_processor import CorpusZhDataProcessor as CZDP
-from ner.brnn_crf import BrnnCrfNer
 
-class TokenizerAndPosseg(BrnnCrfNer):
-    def __init__(self, num_step, num_words, model_path=None):
+class TokenizerAndPosseg(TFModel):
+    def __init__(self, num_step, num_words, model_name='TokenizerAndPosseg', model_path=None):
         self.model_path=model_path
         self.num_step=num_step
         self.num_words=num_words
-        self.sess=None
-        with tf.variable_scope('brnn_crf_ner'):
-            self.we = WordEmbedding(num_step=num_step,dict_size=num_words,word_vec_size=50)
-            self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[30], rnn_type='gru')
-            self.crf_tokenizer = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length,num_tags=2, name='crf_tokenizer')
-            self.crf_posseg = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length,num_tags=70, name='crf_posseg')
-            self.train_op_tokenizer = tf.train.AdamOptimizer(1e-3).minimize(self.crf_tokenizer.loss, global_step=self.crf_tokenizer.global_step)
-            self.train_op_posseg = tf.train.AdamOptimizer(1e-3).minimize(self.crf_posseg.loss, global_step=self.crf_posseg.global_step)
-            self.saver = tf.train.Saver()
-            for var in tf.trainable_variables(): print(var.name)
+        super(TokenizerAndPosseg,self).__init__(model_name,model_path) 
+
+    def _build_model(self):
+        self.we = WordEmbedding(num_step=self.num_step,dict_size=self.num_words,word_vec_size=50)
+        self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[30], rnn_type='gru')
+        self.crf_tokenizer = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length,num_tags=2, name='crf_tokenizer')
+        self.crf_posseg = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length,num_tags=70, name='crf_posseg')
+        self.train_op_tokenizer = tf.train.AdamOptimizer(1e-3).minimize(self.crf_tokenizer.loss, global_step=self.crf_tokenizer.global_step)
+        self.train_op_posseg = tf.train.AdamOptimizer(1e-3).minimize(self.crf_posseg.loss, global_step=self.crf_posseg.global_step)
+        for var in tf.trainable_variables(): print(var.name)
 
     #做交叉验证，如果所有指标都比现有模型好则保持
     def cv(self, cv_generator,job='tokenizer'):
@@ -70,8 +70,7 @@ class TokenizerAndPosseg(BrnnCrfNer):
             }
             _,step,loss,acc,outputs = self.sess.run([train_op, crf.global_step, crf.loss, crf.acc, crf.outputs],feed_dict=fd)
             print('job: %s, step: %s, loss: %s, acc:%s'%(job,step,loss,acc))
-        print('save model: ',self.model_path)
-        self.saver.save(self.sess, self.model_path)
+        self.save_model()
 
 
 if __name__=='__main__':
@@ -86,14 +85,15 @@ if __name__=='__main__':
     m=TokenizerAndPosseg(num_step=tokenizer_dp.num_step,num_words=tokenizer_dp.num_words, model_path='/root/tfNLP/motc/ner/TokenizerAndPosseg/model')
     m.set_session()
     m.init_model()
+    m.load_model()
     tokenizer_train_generator = tokenizer_dp.batch_sample(batch_size=1000)
     tokenizer_cv_generator = tokenizer_dp.batch_sample(batch_size=1000,work_type='cv')
     posseg_train_generator = posseg_dp.batch_sample(batch_size=1000)
     posseg_cv_generator = posseg_dp.batch_sample(batch_size=1000,work_type='cv')
     for i in range(10000):
-        m.train(epochs=10,train_generator=posseg_train_generator, job='posseg')
-        m.train(epochs=10,train_generator=tokenizer_train_generator, job='tokenizer')
-        if i%10==0: 
+        m.train(epochs=1,train_generator=posseg_train_generator, job='posseg')
+        m.train(epochs=1,train_generator=tokenizer_train_generator, job='tokenizer')
+        if i%20==0: 
             m.cv(cv_generator=tokenizer_cv_generator, job='tokenizer')    
             m.cv(cv_generator=posseg_cv_generator, job='posseg')    
             
