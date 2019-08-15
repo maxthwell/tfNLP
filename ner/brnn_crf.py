@@ -12,6 +12,7 @@ class BrnnCrfNer():
         self.num_step=num_step
         self.num_tags=num_tags
         self.num_words=num_words
+        self.sess=None
         with tf.variable_scope('brnn_crf_ner'):
             self.we = WordEmbedding(num_step=num_step,dict_size=num_words,word_vec_size=50)
             self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[30], rnn_type='gru')
@@ -20,9 +21,18 @@ class BrnnCrfNer():
             self.saver = tf.train.Saver()
             for var in tf.trainable_variables(): print(var.name)   
 
-    def load_model(self,sess):
+    def set_session(self, sess=None):
+        if sess: self.sess = sess
+        else:
+            self.sess = tf.Session()
+
+    def init_model(self):
+        init = tf.global_variables_initializer()
+        self.sess.run(init)
+            
+    def load_model(self):
         try:
-            self.saver.restore(sess, self.model_path)
+            self.saver.restore(self.sess, self.model_path)
             print('-------------------- model has already restored: ', self.model_path)
             return True
         except:
@@ -30,16 +40,16 @@ class BrnnCrfNer():
             return False
 
     #做交叉验证，如果所有指标都比现有模型好则保持
-    def cv(self, sess,cv_generator,label_list=None):
+    def cv(self,cv_generator,label_list=None):
         S,L,X,Y = next(cv_generator)
         fd={                                                                 
           self.we.inputs: np.array(X,dtype=np.int32),                        
           self.brnn.sequence_length: np.array(L),
           self.crf.exp_tags: np.array(Y,dtype=np.int32),
         }
-        step,loss,acc,tags= sess.run([self.crf.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
+        step,loss,acc,tags= self.sess.run([self.crf.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
         t0=time.time()
-        sess.run([self.crf.global_step,self.crf.outputs],feed_dict=fd)
+        self.sess.run([self.crf.global_step,self.crf.outputs],feed_dict=fd)
         t1=time.time()
         for batch_id in range(100):
             tag = tags[batch_id]
@@ -55,40 +65,33 @@ class BrnnCrfNer():
         print('----------------- cross-validation loss: %s, acc:%s'%(loss,acc))
            
 
-    def train(self,sess=None,train_generator=None,cv_generator=None,epochs=100):
-        def work(sess):
-            #self.cv(sess)
-            for i in range(epochs):
-                S,L,X,Y = next(train_generator)
-                fd={
+    def train(self,train_generator=None,cv_generator=None,epochs=100):
+        for i in range(epochs):
+            S,L,X,Y = next(train_generator)
+            fd={
                   self.we.inputs: np.array(X,dtype=np.int32),
                   self.brnn.sequence_length: np.array(L),
                   self.crf.exp_tags: np.array(Y,dtype=np.int32),
-                }
-                _,step,loss,acc,outputs = sess.run([self.train_op, self.crf.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
-                print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
-            print('save model: ',self.model_path)
-            self.saver.save(sess, self.model_path)
-            if cv_generator:
-                self.cv(sess,cv_generator)
-        if sess==None:
-            with tf.Session() as sess:
-                init = tf.global_variables_initializer()
-                sess.run(init)
-                self.load_model(sess)
-                work(sess)
-        else:
-            work(sess)
+            }
+            _,step,loss,acc,outputs = self.sess.run([self.train_op, self.crf.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
+            print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
+        print('save model: ',self.model_path)
+        self.saver.save(self.sess, self.model_path)
+        if cv_generator:
+            self.cv(self.sess,cv_generator)
 
 
 if __name__=='__main__':
     wdp = WDP(
       num_step = 1000,
+      annotation_file='/data/wiki_corpus_chs.txt'
     )
     m=BrnnCrfNer(num_tags=2,num_step=wdp.num_step,num_words=wdp.num_words, model_path='/root/tfNLP/motc/ner/brnn_crf/model')
+    m.set_session()
+    m.init_model()
     train_generator = wdp.batch_sample(batch_size=1000)
     cv_generator = wdp.batch_sample(batch_size=1000,work_type='cv')
-    for i in range(100): m.train(epochs=100,train_generator=train_generator,cv_generator=cv_generator)
+    for i in range(10000): m.train(epochs=10,train_generator=train_generator,cv_generator=cv_generator)
     
             
             
