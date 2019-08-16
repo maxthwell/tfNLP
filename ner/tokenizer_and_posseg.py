@@ -16,8 +16,8 @@ class TokenizerAndPosseg(TFModel):
         super(TokenizerAndPosseg,self).__init__(model_name,model_path) 
 
     def _build_model(self):
-        self.we = WordEmbedding(num_step=self.num_step,dict_size=self.num_words,word_vec_size=50)
-        self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[30], rnn_type='gru')
+        self.we = WordEmbedding(num_step=self.num_step,dict_size=self.num_words,word_vec_size=100)
+        self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[100,100], rnn_type='gru')
         self.crf_tokenizer = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length,num_tags=2, name='crf_tokenizer')
         self.crf_posseg = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length,num_tags=70, name='crf_posseg')
         self.train_op_tokenizer = tf.train.AdamOptimizer(1e-3).minimize(self.crf_tokenizer.loss, global_step=self.crf_tokenizer.global_step)

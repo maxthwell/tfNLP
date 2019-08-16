@@ -32,6 +32,11 @@ class BiRnn():
             self.outputs = tf.concat(outputs,axis=2)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
 
+class Dropout():
+    def __init__(self, inputs, keep_prob=0.5, name='dropout'):
+        with tf.variable_scope(name):
+            self.outputs = tf.nn.dropout(inputs, keep_prob)
+
 class Attention():
     def __init__(self, inputs, name='tfnlp_attention'):
         with tf.variable_scope(name):
@@ -69,7 +74,9 @@ class Classiffier():
             exp_prob = tf.one_hot(self.exp_label, depth=num_label)
             for units in ffn_units_list:
                 inputs = tf.layers.dense(inputs=inputs, units=units, activation=tf.nn.relu)
-            self.outputs = tf.layers.dense(inputs=inputs, units=num_label, activation=tf.nn.softmax)
+            self.T = tf.placeholder(tf.float32)
+            self.energy = tf.layers.dense(inputs=inputs, units=num_label, activation=tf.nn.tanh)
+            self.outputs = tf.nn.softmax(self.energy / self.T)
             self.loss = -tf.reduce_mean(tf.reduce_sum(exp_prob*tf.log(self.outputs),axis=1))
             self.predict_label = tf.to_int32(tf.argmax(self.outputs,axis=1))
             self.acc = tf.reduce_mean(tf.to_float(tf.equal(self.predict_label, self.exp_label)))

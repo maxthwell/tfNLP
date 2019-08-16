@@ -66,11 +66,11 @@ class NerDataProcessor():
         test_line_list = [i for i in range(self.annotation_lines) if i%100==0]
         while True:
             if wt=='train':
-                idx_list = random.sample(train_line_list, batch_size)
+                idx_list = random.choices(train_line_list, k=batch_size)
             elif wt=='cv':
-                idx_list = random.sample(cv_line_list, batch_size)
+                idx_list = random.choices(cv_line_list, k=batch_size)
             elif wt=='test':
-                idx_list = random.sample(test_line_list, batch_size)
+                idx_list = random.choices(test_line_list, k=batch_size)
             sentence_list=[]
             sl_list = []
             data_list = []
