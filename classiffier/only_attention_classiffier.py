@@ -44,7 +44,10 @@ class OnlyAttentionClassiffier(TFModel):
         print(eva)
            
 
-    def train(self,generator=None,epochs=100):
+    def export_model(self, export_dir):
+        tf.saved_model.simple_save(self.sess, export_dir=export_dir, inputs={'wid':self.we.inputs, 'T':self.clf.T}, outputs={'tags': self.clf.outputs})
+
+    def train(self,generator=None,epochs=1000):
         for i in range(epochs):
             S,L,X,Y = next(generator)
             fd={
@@ -66,8 +69,11 @@ if __name__=='__main__':
     m.set_session()
     m.init_model()
     m.load_model()
-    train_generator = dp.batch_sample(batch_size=1000)
+    m.export_model('/root/tfNLP/tfserving/saved_model/only_attention/4')
+    m.export_model('/root/tfNLP/tfserving/saved_model/only_attention/5')
+    import pdb;pdb.set_trace()
+    train_generator = dp.batch_sample(batch_size=10)
     cv_generator = dp.batch_sample(batch_size=10000,work_type='cv')
-    for i in range(100):
+    for i in range(1000):
         m.train(generator = train_generator)
         m.cv(generator = cv_generator)
