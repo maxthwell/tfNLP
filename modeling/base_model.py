@@ -74,9 +74,8 @@ class Classiffier():
             exp_prob = tf.one_hot(self.exp_label, depth=num_label)
             for units in ffn_units_list:
                 inputs = tf.layers.dense(inputs=inputs, units=units, activation=tf.nn.relu)
-            self.T = tf.placeholder(tf.float32)
             self.energy = tf.layers.dense(inputs=inputs, units=num_label, activation=tf.nn.tanh)
-            self.outputs = tf.nn.softmax(self.energy / self.T)
+            self.outputs = tf.nn.softmax(self.energy)
             self.loss = -tf.reduce_mean(tf.reduce_sum(exp_prob*tf.log(self.outputs),axis=1))
             self.predict_label = tf.to_int32(tf.argmax(self.outputs,axis=1))
             self.acc = tf.reduce_mean(tf.to_float(tf.equal(self.predict_label, self.exp_label)))

@@ -12,7 +12,6 @@ class BrnnAttentionClassiffier():
         self.num_step=num_step
         self.num_label=num_label
         self.num_words=num_words
-        self.T = 1
         super(BrnnAttentionClassiffier,self).__init__(model_name,model_path)
 
     def build_model(self):
@@ -29,7 +28,6 @@ class BrnnAttentionClassiffier():
           self.we.inputs: np.array(X,dtype=np.int32),                        
           self.brnn.sequence_length: np.array(L),
           self.clf.exp_label: np.array(Y,dtype=np.int32),
-          self.clf.T: 1,
         }
         t0=time.time()
         step,loss,acc,all_label = self.sess.run([self.clf.global_step, self.clf.loss, self.clf.acc, self.clf.all_label],feed_dict=fd)
@@ -50,10 +48,8 @@ class BrnnAttentionClassiffier():
               self.we.inputs: np.array(X,dtype=np.int32),
               self.brnn.sequence_length: np.array(L),
               self.clf.exp_label: np.array(Y,dtype=np.int32),
-              self.clf.T: self.T,
             }
             _,step,loss,acc = self.sess.run([self.train_op, self.clf.global_step, self.clf.loss, self.clf.acc],feed_dict=fd)
-            self.T = 10/(1+loss)
             print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
             self.save_model()
 

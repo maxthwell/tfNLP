@@ -14,7 +14,6 @@ class OnlyAttentionClassiffier(TFModel):
         self.num_step=num_step
         self.num_label=num_label
         self.num_words=num_words
-        self.T = 1
         super(OnlyAttentionClassiffier,self).__init__(model_name,model_path)
         
     def _build_model(self):
@@ -30,7 +29,6 @@ class OnlyAttentionClassiffier(TFModel):
         fd={                                                                 
           self.we.inputs: np.array(X,dtype=np.int32),                        
           self.clf.exp_label: np.array(Y,dtype=np.int32),
-          self.clf.T: 1,
         }
         t0=time.time()
         step,loss,acc,all_label = self.sess.run([self.clf.global_step, self.clf.loss, self.clf.acc, self.clf.all_label],feed_dict=fd)
@@ -45,7 +43,7 @@ class OnlyAttentionClassiffier(TFModel):
            
 
     def export_model(self, export_dir):
-        tf.saved_model.simple_save(self.sess, export_dir=export_dir, inputs={'wid':self.we.inputs, 'T':self.clf.T}, outputs={'tags': self.clf.outputs})
+        tf.saved_model.simple_save(self.sess, export_dir=export_dir, inputs={'wid':self.we.inputs}, outputs={'tags': self.clf.outputs})
 
     def train(self,generator=None,epochs=1000):
         for i in range(epochs):
@@ -53,10 +51,8 @@ class OnlyAttentionClassiffier(TFModel):
             fd={
               self.we.inputs: np.array(X,dtype=np.int32),
               self.clf.exp_label: np.array(Y,dtype=np.int32),
-              self.clf.T: self.T,
             }
             _,step,loss,acc = self.sess.run([self.train_op, self.clf.global_step, self.clf.loss, self.clf.acc],feed_dict=fd)
-            self.T = 10 / (1+loss)
             print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
         self.save_model()
 
@@ -69,8 +65,8 @@ if __name__=='__main__':
     m.set_session()
     m.init_model()
     m.load_model()
-    m.export_model('/root/tfNLP/tfserving/saved_model/only_attention/4')
-    m.export_model('/root/tfNLP/tfserving/saved_model/only_attention/5')
+    m.export_model('/root/tfNLP/tfserving/saved_model/only_attention/1')
+    m.export_model('/root/tfNLP/tfserving/saved_model/only_attention/2')
     import pdb;pdb.set_trace()
     train_generator = dp.batch_sample(batch_size=10)
     cv_generator = dp.batch_sample(batch_size=10000,work_type='cv')
