@@ -1,3 +1,8 @@
+'''
+TF_CONFIG='{"task":{"type":"ps", "index":0}, "cluster":{"ps":["10.2.174.11:2220"], "worker":["10.2.174.11:2221","10.2.174.11:2222"]}}' python3 tfjob.py
+'''
+
+
 import os,json
 import tensorflow as tf
 import numpy as np
@@ -35,26 +40,17 @@ class DistributeMachine():
         with tf.device(tf.train.replica_device_setter(
                 worker_device="/job:worker/task:%d" % self.task_index,
                 cluster=self.cluster)):
-            self.create_tfmodel()
+            self.tfmodel = self._create_tfmodel()
             self.summary_op = tf.summary.merge_all()
             self.init_op = tf.global_variables_initializer()
 
-    def create_tfmodel(self):
-        self.dp = CDP(
-            train_data_dir = '/data/THUCNews',
-            num_step = 1000,
-        )
-        self.tfmodel=OnlyAttentionClassiffier(
-            num_label=self.dp.num_label,
-            num_step=self.dp.num_step,
-            num_words=self.dp.num_words,
-            model_path='/root/tfNLP/motc/clf/only_attention/model'
-        )
+    def _create_tfmodel(self):
+        raise Exception("you must realize create_tfmodel function")
 
     def worker(self):
         # Create a "supervisor", which oversees the training process.
         sv = tf.train.Supervisor(is_chief=(self.task_index == 0),
-                         logdir="/data/train_logs",
+                         logdir=self.tfmodel.model_path,
                          init_op=self.init_op,
                          summary_op=self.summary_op,
                          saver=self.tfmodel.saver,
@@ -65,20 +61,13 @@ class DistributeMachine():
         # a checkpoint, and closing when done or an error occurs.
         with sv.managed_session(self.server.target) as sess:
             # Loop until the supervisor shuts down or 1000000 steps have completed.
-            train_generator = self.dp.batch_sample(batch_size=1000)
-            cv_generator = self.dp.batch_sample(batch_size=10000,work_type='cv')
             self.tfmodel.set_session(sess)
-            while not sv.should_stop():
-                step, loss, acc = self.tfmodel.train(generator = train_generator, epochs=5)
-                if self.task_index == 0: 
-                    self.tfmodel.cv(generator = cv_generator)
-                if step>100:
-                    sv.request_stop()
-                    self.tfmodel.unset_session()
+            self._dist_train(sv)
+            sv.stop()
+
+    def _dist_train(self, sv):
+        raise Exception("you must realize dist_train function")
  
-        # Ask for all the services to stop.
-        print("--------------sv.stop()")
-        sv.stop()
 
 if __name__=='__main__':
     machine = DistributeMachine()

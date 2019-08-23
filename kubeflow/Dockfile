@@ -1,0 +1,6 @@
+FROM tensorflow/tensorflow:1.14.0
+ENV LANG en_US.utf8
+ENV PYTHONPATH /tfNLP
+ADD tfNLP /tfNLP
+
+ENTRYPOINT ["python3", "/tfNLP/kubeflow/dist-only-attention.py"]
