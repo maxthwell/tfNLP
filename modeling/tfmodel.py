@@ -7,6 +7,7 @@ class TFModel():
         self.sess = None
         self.model_path = model_path
         with tf.variable_scope(model_name):
+            self.global_step = tf.Variable(0)
             self._build_model()
             self.saver = tf.train.Saver()
 
@@ -17,6 +18,9 @@ class TFModel():
         if sess: self.sess = sess
         else:
             self.sess = tf.Session()
+
+    def unset_session(self):
+        self.sess = None
 
     def init_model(self):
         init_op = tf.global_variables_initializer()

@@ -21,7 +21,7 @@ class OnlyAttentionClassiffier(TFModel):
         attention = Attention(inputs=self.we.outputs)
         dropout = Dropout(inputs=attention.outputs, keep_prob=0.97)
         self.clf = Classiffier(inputs=dropout.outputs, num_label=self.num_label)
-        self.train_op = tf.train.AdamOptimizer(1e-3).minimize(self.clf.loss, global_step=self.clf.global_step)
+        self.train_op = tf.train.AdamOptimizer(1e-3).minimize(self.clf.loss, global_step=self.global_step)
 
     #做交叉验证，如果所有指标都比现有模型好则保持
     def cv(self, generator, label_list=None):
@@ -31,7 +31,7 @@ class OnlyAttentionClassiffier(TFModel):
           self.clf.exp_label: np.array(Y,dtype=np.int32),
         }
         t0=time.time()
-        step,loss,acc,all_label = self.sess.run([self.clf.global_step, self.clf.loss, self.clf.acc, self.clf.all_label],feed_dict=fd)
+        step,loss,acc,all_label = self.sess.run([self.global_step, self.clf.loss, self.clf.acc, self.clf.all_label],feed_dict=fd)
         t1=time.time()
         print('----------------- global_step: ',step)
         print('----------------- predict 10000 samples use time: %s sencond'%(t1-t0))
@@ -52,9 +52,10 @@ class OnlyAttentionClassiffier(TFModel):
               self.we.inputs: np.array(X,dtype=np.int32),
               self.clf.exp_label: np.array(Y,dtype=np.int32),
             }
-            _,step,loss,acc = self.sess.run([self.train_op, self.clf.global_step, self.clf.loss, self.clf.acc],feed_dict=fd)
+            _,step,loss,acc = self.sess.run([self.train_op, self.global_step, self.clf.loss, self.clf.acc],feed_dict=fd)
             print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
-        self.save_model()
+        #self.save_model()
+        return step, loss, acc
 
 if __name__=='__main__':
     dp = CDP(

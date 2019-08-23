@@ -18,7 +18,7 @@ class BrnnCrfNer(TFModel):
         self.we = WordEmbedding(num_step=self.num_step,dict_size=self.num_words,word_vec_size=50)
         self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[30], rnn_type='gru')
         self.crf = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length)
-        self.train_op = tf.train.AdamOptimizer(1e-3).minimize(self.crf.loss, global_step=self.crf.global_step)
+        self.train_op = tf.train.AdamOptimizer(1e-3).minimize(self.crf.loss, global_step=self.global_step)
         for var in tf.trainable_variables(): print(var.name)   
 
     #做交叉验证，如果所有指标都比现有模型好则保持
@@ -29,9 +29,9 @@ class BrnnCrfNer(TFModel):
           self.brnn.sequence_length: np.array(L),
           self.crf.exp_tags: np.array(Y,dtype=np.int32),
         }
-        step,loss,acc,tags= self.sess.run([self.crf.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
+        step,loss,acc,tags= self.sess.run([self.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
         t0=time.time()
-        self.sess.run([self.crf.global_step,self.crf.outputs],feed_dict=fd)
+        self.sess.run([self.global_step,self.crf.outputs],feed_dict=fd)
         t1=time.time()
         for batch_id in range(100):
             tag = tags[batch_id]
@@ -55,7 +55,7 @@ class BrnnCrfNer(TFModel):
                   self.brnn.sequence_length: np.array(L),
                   self.crf.exp_tags: np.array(Y,dtype=np.int32),
             }
-            _,step,loss,acc,outputs = self.sess.run([self.train_op, self.crf.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
+            _,step,loss,acc,outputs = self.sess.run([self.train_op, self.global_step, self.crf.loss, self.crf.acc,self.crf.outputs],feed_dict=fd)
             print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
         print('save model: ',self.model_path)
         self.save_model()

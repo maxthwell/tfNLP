@@ -64,7 +64,6 @@ class CRF():
             yeqd = tf.equal(self.exp_tags, self.outputs)
             sum_sl = tf.to_float(tf.reduce_sum(sequence_length))
             self.acc = (tf.reduce_sum(tf.to_float(yeqd)) - tf.reduce_sum(tf.ones_like(tf.to_float(self.exp_tags))) + sum_sl) / sum_sl
-            self.global_step = tf.Variable(0)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
 
 class Classiffier():
@@ -80,7 +79,6 @@ class Classiffier():
             self.predict_label = tf.to_int32(tf.argmax(self.outputs,axis=1))
             self.acc = tf.reduce_mean(tf.to_float(tf.equal(self.predict_label, self.exp_label)))
             self.all_label = tf.concat([tf.reshape(self.exp_label,[-1,1]),tf.reshape(self.predict_label,[-1,1])],axis=1)
-            self.global_step = tf.Variable(0)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
             
 class Regression():
@@ -92,7 +90,6 @@ class Regression():
             self.outputs = tf.layers.dense(inputs=inputs, units=num_out, activation=tf.nn.tanh)
             self.loss = -tf.reduce_mean((self.outputs-self.exp_out)**2)
             self.stderr = self.loss**0.5
-            self.global_step = tf.Variable(0)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
 
 class SelfAttention():

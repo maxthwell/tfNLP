@@ -20,8 +20,8 @@ class TokenizerAndPosseg(TFModel):
         self.brnn = BiRnn(inputs=self.we.outputs, rnn_size_list=[100,100], rnn_type='gru')
         self.crf_tokenizer = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length,num_tags=2, name='crf_tokenizer')
         self.crf_posseg = CRF(inputs=self.brnn.outputs,sequence_length=self.brnn.sequence_length,num_tags=70, name='crf_posseg')
-        self.train_op_tokenizer = tf.train.AdamOptimizer(1e-3).minimize(self.crf_tokenizer.loss, global_step=self.crf_tokenizer.global_step)
-        self.train_op_posseg = tf.train.AdamOptimizer(1e-3).minimize(self.crf_posseg.loss, global_step=self.crf_posseg.global_step)
+        self.train_op_tokenizer = tf.train.AdamOptimizer(1e-3).minimize(self.crf_tokenizer.loss, global_step=self.global_step)
+        self.train_op_posseg = tf.train.AdamOptimizer(1e-3).minimize(self.crf_posseg.loss, global_step=self.global_step)
         for var in tf.trainable_variables(): print(var.name)
 
     #做交叉验证，如果所有指标都比现有模型好则保持
@@ -34,9 +34,9 @@ class TokenizerAndPosseg(TFModel):
           self.brnn.sequence_length: np.array(L),
           crf.exp_tags: np.array(Y,dtype=np.int32),
         }
-        step,loss,acc,tags= self.sess.run([crf.global_step, crf.loss, crf.acc, crf.outputs],feed_dict=fd)
+        step,loss,acc,tags= self.sess.run([self.global_step, crf.loss, crf.acc, crf.outputs],feed_dict=fd)
         t0=time.time()
-        self.sess.run([crf.global_step,crf.outputs],feed_dict=fd)
+        self.sess.run([self.global_step,crf.outputs],feed_dict=fd)
         t1=time.time()
         if job=='tokenizer':
             for batch_id in range(100):
@@ -68,7 +68,7 @@ class TokenizerAndPosseg(TFModel):
                   self.brnn.sequence_length: np.array(L),
                   crf.exp_tags: np.array(Y,dtype=np.int32),
             }
-            _,step,loss,acc,outputs = self.sess.run([train_op, crf.global_step, crf.loss, crf.acc, crf.outputs],feed_dict=fd)
+            _,step,loss,acc,outputs = self.sess.run([train_op, self.global_step, crf.loss, crf.acc, crf.outputs],feed_dict=fd)
             print('job: %s, step: %s, loss: %s, acc:%s'%(job,step,loss,acc))
         self.save_model()
 
