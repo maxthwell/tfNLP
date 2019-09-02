@@ -1,7 +1,6 @@
 import os,sys,re,time,shutil
 import random
 import numpy as np
-import scipy as sp
 import tensorflow as tf
 from tensorflow.nn import rnn_cell
 
@@ -65,6 +64,8 @@ class CRF():
             sum_sl = tf.to_float(tf.reduce_sum(sequence_length))
             self.acc = (tf.reduce_sum(tf.to_float(yeqd)) - tf.reduce_sum(tf.ones_like(tf.to_float(self.exp_tags))) + sum_sl) / sum_sl
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
+            #tf.summary.scalar('acc',self.acc)
+            #tf.summary.scalar('loss',self.loss)
 
 class Classiffier():
     def __init__(self, inputs, num_label, ffn_units_list=[],name='classiffier'):
@@ -80,6 +81,8 @@ class Classiffier():
             self.acc = tf.reduce_mean(tf.to_float(tf.equal(self.predict_label, self.exp_label)))
             self.all_label = tf.concat([tf.reshape(self.exp_label,[-1,1]),tf.reshape(self.predict_label,[-1,1])],axis=1)
             self.saver = tf.train.Saver([var for var in tf.trainable_variables() if name in var.name])
+            #tf.summary.scalar('acc',self.acc)
+            #tf.summary.scalar('loss',self.loss)
             
 class Regression():
     def __init__(self, inputs, num_out, ffn_units_list=[],name='regression'):

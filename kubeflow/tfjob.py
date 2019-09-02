@@ -29,9 +29,17 @@ class DistributeMachine():
                          task_index=self.task_index
                       )
 
+        self.is_chief = (self.job_name == 'worker' and self.task_index==0)
         if self.job_name == "ps":
             self.server.join()
+
+        if self.is_chief:
+            print("Worker %d: Initializing session..." % self.task_index)
+            tf.reset_default_graph()
         else:
+            print("Worker %d: Waiting for session to be initialized..." % self.task_index)
+
+        if not self.job_name=='ps':
             self.__build_model()
             self.worker()
 
@@ -49,7 +57,7 @@ class DistributeMachine():
 
     def worker(self):
         # Create a "supervisor", which oversees the training process.
-        sv = tf.train.Supervisor(is_chief=(self.task_index == 0),
+        sv = tf.train.Supervisor(is_chief=self.is_chief,
                          logdir=self.tfmodel.model_path,
                          init_op=self.init_op,
                          summary_op=self.summary_op,
@@ -59,11 +67,17 @@ class DistributeMachine():
  
         # The supervisor takes care of session initialization, restoring from
         # a checkpoint, and closing when done or an error occurs.
-        with sv.managed_session(self.server.target) as sess:
-            # Loop until the supervisor shuts down or 1000000 steps have completed.
-            self.tfmodel.set_session(sess)
-            self._dist_train(sv)
-            sv.stop()
+        #with sv.managed_session(self.server.target) as sess:
+        sess_config = tf.ConfigProto(
+            allow_soft_placement=True,
+            log_device_placement=False,
+            device_filters=["/job:ps","/job:worker/task:%d" % self.task_index]
+        )
+        sess = sv.prepare_or_wait_for_session(self.server.target, config=sess_config)
+        # Loop until the supervisor shuts down or 1000000 steps have completed.
+        self.tfmodel.set_session(sess)
+        self._dist_train(sv)
+        sv.stop()
 
     def _dist_train(self, sv):
         raise Exception("you must realize dist_train function")

@@ -1,7 +1,6 @@
 import os,sys,re,time,shutil
 import random
 import numpy as np
-import scipy as sp
 import tensorflow as tf
 from modeling.base_model import WordEmbedding, BiRnn, CRF
 from modeling.tfmodel import TFModel

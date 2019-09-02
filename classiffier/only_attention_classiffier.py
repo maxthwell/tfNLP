@@ -1,7 +1,6 @@
 import os,sys,re,time,shutil
 import random
 import numpy as np
-import scipy as sp
 import tensorflow as tf
 from modeling.base_model import WordEmbedding, BiRnn, Classiffier, Attention, Dropout
 from data_processor.clf_processor import LocalFileClassiffierDataProcessor as CDP
@@ -33,7 +32,7 @@ class OnlyAttentionClassiffier(TFModel):
         t0=time.time()
         step,loss,acc,all_label = self.sess.run([self.global_step, self.clf.loss, self.clf.acc, self.clf.all_label],feed_dict=fd)
         t1=time.time()
-        print('----------------- global_step: ',step)
+        print('----------------- global_step: %s'%step)
         print('----------------- predict 10000 samples use time: %s sencond'%(t1-t0))
         eva = ClassiffierModelEvaluator(num_label=self.num_label,label_name_list=label_list)
         eva.batch_add(all_label)
@@ -45,15 +44,14 @@ class OnlyAttentionClassiffier(TFModel):
     def export_model(self, export_dir):
         tf.saved_model.simple_save(self.sess, export_dir=export_dir, inputs={'wid':self.we.inputs}, outputs={'tags': self.clf.outputs})
 
-    def train(self,generator=None,epochs=1000):
-        for i in range(epochs):
-            S,L,X,Y = next(generator)
-            fd={
-              self.we.inputs: np.array(X,dtype=np.int32),
-              self.clf.exp_label: np.array(Y,dtype=np.int32),
-            }
-            _,step,loss,acc = self.sess.run([self.train_op, self.global_step, self.clf.loss, self.clf.acc],feed_dict=fd)
-            print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
+    def train(self,generator=None):
+        S,L,X,Y = next(generator)
+        fd={
+          self.we.inputs: np.array(X,dtype=np.int32),
+          self.clf.exp_label: np.array(Y,dtype=np.int32),
+        }
+        _,step,loss,acc = self.sess.run([self.train_op, self.global_step, self.clf.loss, self.clf.acc],feed_dict=fd)
+        print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
         #self.save_model()
         return step, loss, acc
 
@@ -66,10 +64,7 @@ if __name__=='__main__':
     m.set_session()
     m.init_model()
     m.load_model()
-    m.export_model('/root/tfNLP/tfserving/saved_model/only_attention/1')
-    m.export_model('/root/tfNLP/tfserving/saved_model/only_attention/2')
-    import pdb;pdb.set_trace()
-    train_generator = dp.batch_sample(batch_size=10)
+    train_generator = dp.batch_sample(batch_size=1000)
     cv_generator = dp.batch_sample(batch_size=10000,work_type='cv')
     for i in range(1000):
         m.train(generator = train_generator)

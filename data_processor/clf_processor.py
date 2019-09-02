@@ -14,7 +14,6 @@ class WordEmbeddingClassiffierDataProcessor():
             idx=1
             for line in fp:
                 w=str(line,'utf8').split()[0]
-                print(w)
                 wd[w]=idx
                 idx += 1
             return wd
