@@ -1,0 +1,21 @@
+FROM centos:7.4.1708
+#FROM 9f266d35e02c
+MAINTAINER ma.xiangxiang@eisoo.com
+RUN yum install epel-release -y
+RUN yum install https://centos7.iuscommunity.org/ius-release.rpm -y
+RUN yum install python36-devel -y
+RUN ln -s /usr/bin/python3.6 /bin/python3 | true
+RUN yum install python36-pip -y
+RUN ln -s /usr/bin/pip3.6 /bin/pip3 | true
+RUN pip3 install --upgrade pip
+RUN ln -s /usr/bin/pip3.6 /bin/pip | true
+#ADD kubeflow/pip.conf /root/.pip/pip.conf
+#RUN pip config set global.index-url http://package.eisoo.com:8081/repository/pypi/simple
+#RUN pip config set global.trusted-host package.eisoo.com
+RUN pip install tensorflow
+RUN pip install prettytable
+RUN pip install jieba
+ENV LANG en_US.utf8
+
+ADD datas/THUCNewsTest /data/THUCNews
+RUN mkdir -p /data/train_logs

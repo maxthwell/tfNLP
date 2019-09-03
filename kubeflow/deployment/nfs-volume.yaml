@@ -1,0 +1,251 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-pv0
+  labels:
+    pv: nfs-pv0
+spec:
+  capacity:
+    storage: 10Gi
+  #volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: nfs
+  # 此持久化存储卷使用nfs插件
+  nfs:
+    # nfs共享目录为/tmp
+    path: /nfs/0
+    # nfs服务器的地址
+    server: 10.2.174.10
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: kubeflow
+  name: nfs-pv1
+  labels:
+    pv: nfs-pv1
+spec:
+  capacity:
+    storage: 10Gi
+  #volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: nfs
+  # 此持久化存储卷使用nfs插件
+  nfs:
+    # nfs共享目录为/tmp
+    path: /nfs/1
+    # nfs服务器的地址
+    server: 10.2.174.10
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: kubeflow
+  name: nfs-pv2
+  labels:
+    pv: nfs-pv2
+spec:
+  capacity:
+    storage: 10Gi
+  #volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: nfs
+  # 此持久化存储卷使用nfs插件
+  nfs:
+    # nfs共享目录为/tmp
+    path: /nfs/2
+    # nfs服务器的地址
+    server: 10.2.174.10
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: kubeflow
+  name: nfs-pv3
+  labels:
+    pv: nfs-pv3
+spec:
+  capacity:
+    storage: 10Gi
+  #volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: nfs
+  # 此持久化存储卷使用nfs插件
+  nfs:
+    # nfs共享目录为/tmp
+    path: /nfs/3
+    # nfs服务器的地址
+    server: 10.2.174.10
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: kubeflow
+  name: nfs-pv4
+  labels:
+    pv: nfs-pv4
+spec:
+  capacity:
+    storage: 10Gi
+  #volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: nfs
+  # 此持久化存储卷使用nfs插件
+  nfs:
+    # nfs共享目录为/tmp
+    path: /nfs/4
+    # nfs服务器的地址
+    server: 10.2.174.10
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: kubeflow
+  name: nfs-pv5
+  labels:
+    pv: nfs-pv5
+spec:
+  capacity:
+    storage: 10Gi
+  #volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: nfs
+  # 此持久化存储卷使用nfs插件
+  nfs:
+    # nfs共享目录为/tmp
+    path: /nfs/5
+    # nfs服务器的地址
+    server: 10.2.174.10
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: kubeflow
+  name: nfs-pv6
+  labels:
+    pv: nfs-pv6
+spec:
+  capacity:
+    storage: 10Gi
+  #volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: nfs
+  # 此持久化存储卷使用nfs插件
+  nfs:
+    # nfs共享目录为/tmp
+    path: /nfs/6
+    # nfs服务器的地址
+    server: 10.2.174.10
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nfs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: nfs
+  selector:
+    matchLabels:
+      pv: nfs-pv0
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: kubeflow
+  name: mysql-pv-claim
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: nfs
+  selector:
+    matchLabels:
+      pv: nfs-pv1
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: kubeflow
+  name: minio-pv-claim
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: nfs
+  selector:
+    matchLabels:
+      pv: nfs-pv2
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: kubeflow
+  name: metadata-mysql
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: nfs
+  selector:
+    matchLabels:
+      pv: nfs-pv3
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: kubeflow
+  name: katib-mysql
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: nfs
+  selector:
+    matchLabels:
+      pv: nfs-pv4

@@ -1,0 +1,37 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: tensorboard
+  name: tensorboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tensorboard
+  template:
+    metadata:
+      labels:
+        app: tensorboard
+    spec:
+      volumes:
+      - name: nfs-pvc
+        persistentVolumeClaim:
+            claimName: nfs-pvc
+      containers:
+      - name: tensorboard
+        image: dist-tfnlp-job:cpu 
+        imagePullPolicy: Never
+        command:
+         - /usr/local/bin/tensorboard
+        args:
+        - --logdir
+        - /data/train_logs
+        volumeMounts:
+        - name: nfs-pvc
+          mountPath: "/data/train_logs"
+        ports:
+        - containerPort: 6006
+          protocol: TCP
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always

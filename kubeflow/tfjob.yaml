@@ -1,0 +1,50 @@
+apiVersion: kubeflow.org/v1
+kind: TFJob
+metadata:
+  generateName: tfjob
+  name: dist-only-attention-cpu
+spec:
+  replicaSpecs:
+    PS:
+      replicas: 1 # 1 Master
+      restartPolicy: OnFailure
+      template:
+        spec:
+          containers:
+          - image: dist-tfnlp-job:cpu
+            name: tensorflow
+            env:
+            #command: ["python3", "/tfNLP/kubeflow/dist-only-attention.py"]
+            imagePullPolicy: Never
+            resources:
+            #  limits:
+            #    cpu: 1
+            volumeMounts:
+            - name: nfs-volume
+              mountPath: "/data/train_logs"
+          volumes:
+            - name: nfs-volume
+              persistentVolumeClaim:
+                claimName: nfs-pvc
+    Worker:
+      replicas: 2 # 1 or 2 Workers depends on how many cpus you have
+      restartPolicy: OnFailure
+      template:
+        spec:
+          containers:
+          - image: dist-tfnlp-job:cpu
+            name: tensorflow
+            env:
+            #command: ["python3", "/tfNLP/kubeflow/dist-only-attention.py"]
+            imagePullPolicy: Never
+            resources:
+            #  limits:
+            #    cpu: 1
+            volumeMounts:
+            - name: nfs-volume
+              mountPath: "/data/train_logs"
+          volumes:
+            - name: nfs-volume
+              persistentVolumeClaim:
+                claimName: nfs-pvc
+
