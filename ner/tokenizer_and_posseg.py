@@ -6,6 +6,7 @@ from modeling.base_model import WordEmbedding, BiRnn, CRF
 from modeling.tfmodel import TFModel
 from data_processor.ner_processor import WikiDataProcessor as WDP
 from data_processor.ner_processor import CorpusZhDataProcessor as CZDP
+_get_module_path = lambda path: os.path.normpath(os.path.join(os.getcwd(),os.path.dirname(__file__), path))
 
 class TokenizerAndPosseg(TFModel):
     def __init__(self, num_step, num_words, model_name='TokenizerAndPosseg', model_path=None):
@@ -81,7 +82,7 @@ if __name__=='__main__':
       num_step = 1000,
       annotation_file='/data/corpusZh/B.txt'
     ) 
-    m=TokenizerAndPosseg(num_step=tokenizer_dp.num_step,num_words=tokenizer_dp.num_words, model_path='/root/tfNLP/motc/ner/TokenizerAndPosseg/model')
+    m=TokenizerAndPosseg(num_step=tokenizer_dp.num_step,num_words=tokenizer_dp.num_words, model_path=_get_module_path('../motc/ner/TokenizerAndPosseg/model'))
     m.set_session()
     m.init_model()
     m.load_model()

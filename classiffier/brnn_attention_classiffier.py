@@ -5,6 +5,7 @@ import tensorflow as tf
 from modeling.base_model import WordEmbedding, BiRnn, Classiffier, Attention
 from data_processor.clf_processor import LocalFileClassiffierDataProcessor as CDP
 from classiffier.evaluator import ClassiffierModelEvaluator
+_get_module_path = lambda path: os.path.normpath(os.path.join(os.getcwd(),os.path.dirname(__file__), path))
 
 class BrnnAttentionClassiffier():
     def __init__(self, num_step, num_words, num_label, model_name='brnn_attention_classiffier', model_path=None):
@@ -59,7 +60,7 @@ if __name__=='__main__':
       cv_data_dir='/data/THUCNewsTest',
       num_step = 1000,
     )
-    m=BrnnAttentionClassiffier(num_label=dp.num_label,num_step=dp.num_step,num_words=dp.num_words, model_path='/root/tfNLP/motc/clf/brnn_attention/model')
+    m=BrnnAttentionClassiffier(num_label=dp.num_label,num_step=dp.num_step,num_words=dp.num_words, model_path=_get_module_path('../motc/clf/brnn_attention/model'))
     m.set_session()
     m.init_model()
     m.load_model()

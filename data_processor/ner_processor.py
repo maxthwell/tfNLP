@@ -3,7 +3,8 @@ import numpy as np
 import jieba
 from collections import Counter
 from data_processor.posseg import pos_list, pos_dict
-    
+_get_module_path = lambda path: os.path.normpath(os.path.join(os.getcwd(),os.path.dirname(__file__), path))
+
 def get_file_lines(filename):
     count = 0
     with open(filename, 'rb') as fr:
@@ -18,7 +19,7 @@ class NerDataProcessor():
         self.num_step=num_step
         self.annotation_file = annotation_file
         self.annotation_lines = annotation_lines if annotation_lines>0 else get_file_lines(annotation_file)
-        self.dict_path=dict_path if dict_path else '/root/tfNLP/data_processor/dict/han_dict.txt'
+        self.dict_path=dict_path if dict_path else _get_module_path('dict/han_dict.txt')
         self.cht_dict = {}
         self.cht_list = []
         self.num_words = 0
