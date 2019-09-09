@@ -7,8 +7,6 @@ import os,json
 import tensorflow as tf
 import numpy as np
 import time
-from data_processor.clf_processor import LocalFileClassiffierDataProcessor as CDP
-from classiffier.only_attention_classiffier import OnlyAttentionClassiffier
 
 class DistributeMachine():
     def __init__(self):

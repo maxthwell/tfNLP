@@ -2,10 +2,10 @@ import os,sys,re,time,shutil
 import random
 import numpy as np
 import tensorflow as tf
-from modeling.base_model import WordEmbedding, BiRnn, CRF
-from modeling.tfmodel import TFModel
-from data_processor.ner_processor import WikiDataProcessor as WDP
-from data_processor.ner_processor import CorpusZhDataProcessor as CZDP
+from tfnlp.modeling.base_model import WordEmbedding, BiRnn, CRF
+from tfnlp.modeling.tfmodel import TFModel
+from tfnlp.data_processor.ner_processor import WikiDataProcessor as WDP
+from tfnlp.data_processor.ner_processor import CorpusZhDataProcessor as CZDP
 _get_module_path = lambda path: os.path.normpath(os.path.join(os.getcwd(),os.path.dirname(__file__), path))
 
 class TokenizerAndPosseg(TFModel):

@@ -2,9 +2,9 @@ import os,sys,re,time,shutil
 import random
 import numpy as np
 import tensorflow as tf
-from modeling.base_model import WordEmbedding, BiRnn, Classiffier, Attention
-from data_processor.clf_processor import LocalFileClassiffierDataProcessor as CDP
-from classiffier.evaluator import ClassiffierModelEvaluator
+from tfnlp.modeling.base_model import WordEmbedding, BiRnn, Classiffier, Attention
+from tfnlp.data_processor.clf_processor import LocalFileClassiffierDataProcessor as CDP
+from tfnlp.classiffier.evaluator import ClassiffierModelEvaluator
 _get_module_path = lambda path: os.path.normpath(os.path.join(os.getcwd(),os.path.dirname(__file__), path))
 
 class BrnnAttentionClassiffier():

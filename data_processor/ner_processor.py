@@ -2,7 +2,7 @@ import os, sys, random, linecache
 import numpy as np
 import jieba
 from collections import Counter
-from data_processor.posseg import pos_list, pos_dict
+from tfnlp.data_processor.posseg import pos_list, pos_dict
 _get_module_path = lambda path: os.path.normpath(os.path.join(os.getcwd(),os.path.dirname(__file__), path))
 
 def get_file_lines(filename):

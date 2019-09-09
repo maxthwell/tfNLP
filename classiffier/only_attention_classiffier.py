@@ -2,10 +2,10 @@ import os,sys,re,time,shutil
 import random
 import numpy as np
 import tensorflow as tf
-from modeling.base_model import WordEmbedding, BiRnn, Classiffier, Attention, Dropout
-from data_processor.clf_processor import LocalFileClassiffierDataProcessor as CDP
-from classiffier.evaluator import ClassiffierModelEvaluator
-from modeling.tfmodel import TFModel
+from tfnlp.modeling.base_model import WordEmbedding, BiRnn, Classiffier, Attention, Dropout
+from tfnlp.data_processor.clf_processor import LocalFileClassiffierDataProcessor as CDP
+from tfnlp.classiffier.evaluator import ClassiffierModelEvaluator
+from tfnlp.modeling.tfmodel import TFModel
 _get_module_path = lambda path: os.path.normpath(os.path.join(os.getcwd(),os.path.dirname(__file__), path))
 
 class OnlyAttentionClassiffier(TFModel):
