@@ -62,27 +62,27 @@ class LocalFileClassiffierDataProcessor(WordEmbeddingClassiffierDataProcessor):
             for fid in sample_fid_list:
                 fs = all_files[fid]
                 N.append('%s/%s/%s'%fs)
-                s,x = self.process_file(fs)
+                with open('%s/%s/%s'%fs, 'r') as fp: content = fp.read()
+                s,x = self.process_text(content)
                 S.append(s)
                 X.append(x)
                 Y.append(self.label_dict[fs[1]])
             yield N,S,X,Y
 
-    def process_file(self, fs):
+    def process_text(self, content):
         import jieba
-        with open('%s/%s/%s'%fs, 'r') as fp: s = fp.read()
         #先进行分词  
-        words = list(jieba.cut(s, cut_all=True)) 
+        words = list(jieba.cut(content, cut_all=True))[:self.num_step]
+        return self.process_word_list(words)
+
+    def process_word_list(self,words):
         #初始化向量序列  
         data = [0 for i in range(self.num_step)] 
-        j = 0  
         #按照词序，依次把用词向量填充序列  
         for i in range(len(words)):
-            if i == self.num_step:  
-                break  
             w = words[i]  
             if w in self.word_dict:  
-                data[i] = self.word_dict[w]  
+                data[i] = self.word_dict[w] 
         return i, data 
 
 

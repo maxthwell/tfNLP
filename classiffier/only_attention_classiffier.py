@@ -41,7 +41,6 @@ class OnlyAttentionClassiffier(TFModel):
         print('cross-validation ---------- loss: %s, acc:%s'%(loss,acc))
         print(eva)
            
-
     def export_model(self, export_dir):
         tf.saved_model.simple_save(self.sess, export_dir=export_dir, inputs={'wid':self.we.inputs}, outputs={'tags': self.clf.outputs})
 
@@ -53,8 +52,24 @@ class OnlyAttentionClassiffier(TFModel):
         }
         _,step,loss,acc = self.sess.run([self.train_op, self.global_step, self.clf.loss, self.clf.acc],feed_dict=fd)
         print('step: %s, loss: %s, acc:%s'%(step,loss,acc))
-        #self.save_model()
         return step, loss, acc
+
+    def set_dp(self,dp):
+        self.dp = dp
+
+    def batch_predict(self, feed_dict={}):
+        outputs = self.sess.run(self.clf.outputs, feed_dict=feed_dict)
+        return {'probe_dist': outputs}
+
+    def _to_feed_dict(self, inputs):
+        if 'content' in inputs:
+            content = inputs['content']
+            S,X = self.dp.process_text(content)
+            return {self.we.inputs:np.array(X)}
+        if 'word_list' in inputs:
+            word_list = inputs['word_list']
+            S,X = self.dp.process_word_list(word_list)
+            return {self.we.inputs:np.array(X)}
 
 if __name__=='__main__':
     dp = CDP(
@@ -65,8 +80,16 @@ if __name__=='__main__':
     m.set_session()
     m.init_model()
     m.load_model()
-    train_generator = dp.batch_sample(batch_size=1000)
-    cv_generator = dp.batch_sample(batch_size=10000,work_type='cv')
+    m.set_dp(dp)
+    #import asyncio
+    #tasks = [m.apredict(content='你好，我是你大爷') for i in range(100)] + [m.main_loop(batch_size=100)]
+    #loop=asyncio.get_event_loop()
+    #loop.run_until_complete(asyncio.wait(tasks))
+
+    train_generator = dp.batch_sample(batch_size=100)
+    cv_generator = dp.batch_sample(batch_size=1000,work_type='cv')
     for i in range(1000):
-        m.train(generator = train_generator)
+        for i in range(100):
+            m.train(generator = train_generator)
+        m.save_model()
         m.cv(generator = cv_generator)
